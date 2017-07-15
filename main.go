@@ -25,12 +25,8 @@ import (
 )
 
 func printUsage() {
-	fmt.Println("Usage: hless source_file [options]")
-	fmt.Println("  -a name pattern       Set alias name for what")
-	fmt.Println("  -v pattern            Exclude pattern")
-	fmt.Println("  -c colorname pattern  Highlight pattern")
-	fmt.Println("  -add                  Add settings to config")
-	fmt.Println("  -set                  Replace all settings in config")
+	fmt.Println("Usage: hless source_file")
+	fmt.Println("  -e edit config")
 }
 
 type Config struct {
@@ -62,6 +58,33 @@ func trueColorSequence(hexcolor string) (string, error) {
 	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm", r, g, b), nil
 }
 
+func editConfig() {
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = os.MkdirAll(filepath.FromSlash(usr.HomeDir+"/.config/hless"), 0700)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	editor := os.Getenv("EDITOR")
+
+	if len(editor) == 0 {
+		editor = "vim"
+	}
+
+	cmd := exec.Command(editor, filepath.FromSlash(usr.HomeDir+"/.config/hless/default.json"))
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func initFormatter() *formatter {
 	c := &Config{
 	/*HighlightWords: make(map[string]string),
@@ -73,9 +96,10 @@ func initFormatter() *formatter {
 		log.Fatal(err)
 	}
 
-	data, err := ioutil.ReadFile(filepath.FromSlash(usr.HomeDir + "/.config/hless/default"))
+	data, err := ioutil.ReadFile(filepath.FromSlash(usr.HomeDir + "/.config/hless/default.json"))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return &formatter{}
 	}
 
 	err = json.Unmarshal(data, c)
@@ -139,6 +163,9 @@ func initFormatter() *formatter {
 }
 
 func (f *formatter) format(line string) string {
+	if f.regex == nil {
+		return line
+	}
 	return f.regex.ReplaceAllStringFunc(line, func(s string) string {
 		if substitute, ok := f.aliases[s]; ok {
 			s = substitute
@@ -160,6 +187,11 @@ func main() {
 	var source io.ReadCloser
 
 	if len(os.Args) > 1 {
+
+		if os.Args[1] == "-e" {
+			editConfig()
+			return
+		}
 		var err error
 		source, err = os.Open(os.Args[1])
 		if err != nil {
