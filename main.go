@@ -9,8 +9,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/gavriva/rlog"
-
 	"regexp"
 
 	"encoding/json"
@@ -93,7 +91,7 @@ func initFormatter() *formatter {
 	for key, fore := range c.Foreground {
 		fs, err := trueColorSequence(fore)
 		if err != nil {
-			rlog.Fatal(err)
+			log.Fatal(err)
 		}
 
 		f.colors[key] = fs
@@ -102,7 +100,7 @@ func initFormatter() *formatter {
 	for key, fore := range c.Background {
 		bs, err := trueColorSequence(fore)
 		if err != nil {
-			rlog.Fatal(err)
+			log.Fatal(err)
 		}
 		if old, ok := f.colors[key]; ok {
 			f.colors[key] = old + bs
