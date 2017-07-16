@@ -218,7 +218,7 @@ func main() {
 	go func() {
 		defer dest.Close() // nolint: errcheck
 		dst := bufio.NewWriter(dest)
-		dst.Flush() // nolint: errcheck
+		defer dst.Flush() // nolint: errcheck
 		src := bufio.NewScanner(source)
 		for src.Scan() {
 			line := src.Text()
